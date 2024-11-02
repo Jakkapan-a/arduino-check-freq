@@ -2,7 +2,7 @@
 #include <TcPINOUT.h>
 
 const int signalPin = 9;
-const int totalBuffer = 5;
+const int totalBuffer = 3;
 float buffer[totalBuffer];
 int bufferIndex = 0;
 int countNoSignal = 0;
@@ -50,7 +50,7 @@ uint32_t lastTime500ms = 0;
 int countCheck = 0;
 const int maxCountCheck = 2;
 const float frequencyMin = 350.0; // 350Hz
-const float frequencyMax = 415.0; // 415Hz
+const float frequencyMax = 425.0; // 425Hz
 int totalTone = 0;
 void loop()
 {
@@ -65,9 +65,7 @@ void loop()
   uint32_t currentTime = millis();
   if (currentTime - lastTime500ms >= 100)
   {
-
     lastTime500ms = currentTime;
-
     if (stateMachine == STATE_OK || stateMachine == STATE_NG)
     {
       if (stateMachine == STATE_NG)
@@ -77,11 +75,12 @@ void loop()
       }else
       if(stateMachine == STATE_OK && totalTone > 0){
         totalTone--;
-        tone(BUZZER_PASSIVE, 2000, 100);
-        delay(200);
+        tone(BUZZER_PASSIVE, 2000, 50);
+        delay(100);
       }
       return;
     }
+
     unsigned long highTime = pulseIn(signalPin, HIGH, 500000); // Timeout 1 second
     unsigned long lowTime = pulseIn(signalPin, LOW, 500000);   // Timeout 1 second
     float averageFrequency = 0;
@@ -93,8 +92,9 @@ void loop()
       float frequency = 1000000.0 / period;
 
       if (frequency > 0 && frequency < 10000)
-      { // Check normal frequency range (0 - 10,000 Hz)
-
+      { 
+        
+        // Check normal frequency range (0 - 10,000 Hz)
         // Add frequency to buffer
         buffer[bufferIndex] = frequency;
         bufferIndex++;
@@ -179,8 +179,6 @@ void startOnEventChange(boolean state)
   Serial.println(isStart);
   if (isStart)
   {
-    // buzzerActive.onToggle(1, 200);
-    // tone(BUZZER_PASSIVE, 2000, 200);
     stateMachine = STATE_RUNNING;
     // LED BLUE
     manageLed(3);
