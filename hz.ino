@@ -2,7 +2,7 @@
 #include <TcPINOUT.h>
 
 const int signalPin = 9;
-const int totalBuffer = 1;
+const int totalBuffer = 2;
 float buffer[totalBuffer];
 int bufferIndex = 0;
 int countNoSignal = 0;
@@ -51,11 +51,14 @@ uint32_t lastTime500ms = 0;
 int countCheck = 0;
 const int maxCountCheck = 2;
 const float frequencyMin = 350.0; // 350Hz
-const float frequencyMax = 470.0; // 470Hz
+const float frequencyMax = 1000.0; // 470Hz
 int totalTone = 0;
 
 float previousAverage = 0;
 const float maxDeviationPercentage = 20.0; // Max deviation from stable frequency in %
+int timeOutNoSignal = 0;
+// 3s
+const int maxTimeOutNoSignal = 2;
 
 void loop()
 {
@@ -64,12 +67,9 @@ void loop()
 
   if (!isStart) return;
 
-  uint32_t currentTime = millis();
-  if (currentTime - lastTime500ms >= 100)
-  {
-    lastTime500ms = currentTime;
 
-    if (stateMachine == STATE_OK || stateMachine == STATE_NG)
+
+   if (stateMachine == STATE_OK || stateMachine == STATE_NG)
     {
       handleBuzzerState();
       return;
@@ -94,6 +94,21 @@ void loop()
     {
       handleNoSignal();
     }
+
+  uint32_t currentTime = millis();
+  if (currentTime - lastTime500ms >= 1000)
+  {
+    lastTime500ms = currentTime;
+
+   timeOutNoSignal++;
+    if (timeOutNoSignal >= maxTimeOutNoSignal)
+    {
+      Serial.println("Time out no signal");
+      stateMachine = STATE_NG;
+      manageLed(1); // LED RED
+      buzzerActive.on();
+      timeOutNoSignal = 0;
+    }
   }
 }
 
@@ -102,7 +117,7 @@ void handleBuzzerState()
   if (stateMachine == STATE_NG)
   {
     tone(BUZZER_PASSIVE, 2000, 400);
-    buzzerActive.on();
+    buzzerActive.onToggle(5,150);
   }
   else if (stateMachine == STATE_OK && totalTone > 0)
   {
@@ -114,8 +129,8 @@ void handleBuzzerState()
 
 float readFrequency()
 {
-  unsigned long highTime = pulseIn(signalPin, HIGH, 500000); // Timeout 500ms
-  unsigned long lowTime = pulseIn(signalPin, LOW, 500000);   // Timeout 500ms
+  unsigned long highTime = pulseIn(signalPin, HIGH, 100000); // Timeout 500ms
+  unsigned long lowTime = pulseIn(signalPin, LOW, 100000);   // Timeout 500ms
 
   Serial.print("High: ");
   Serial.print(highTime);
@@ -131,8 +146,8 @@ float readFrequency()
     Serial.print("Period: ");
     Serial.print(period);
     Serial.print(" ");
-    // Frequency range 0 - 1000 Hz
-    if (frequency > 0 && frequency < 1000)
+    // Frequency range 0 - 5000 Hz
+    if (frequency > 0 && frequency < 5000)
     {
       Serial.print("Frequency: ");
       Serial.print(frequency);
@@ -174,7 +189,7 @@ void evaluateFrequency(float averageFrequency)
     Serial.println("OK");
     stateMachine = STATE_OK;
     manageLed(2); // LED GREEN
-    buzzerActive.onToggle(2, 200);
+    buzzerActive.onToggle(2, 150);
     totalTone = 2;
   }
   else
@@ -217,6 +232,7 @@ void startOnEventChange(boolean state)
     countCheck = 0;
     countNoSignal = 0;
     previousAverage = 0; 
+    timeOutNoSignal = 0;
   }
   else
   {
