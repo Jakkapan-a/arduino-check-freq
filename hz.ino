@@ -2,7 +2,7 @@
 #include <TcPINOUT.h>
 
 const int signalPin = 9;
-const int totalBuffer = 2;
+const int totalBuffer = 3;
 float buffer[totalBuffer];
 int bufferIndex = 0;
 int countNoSignal = 0;
@@ -51,14 +51,14 @@ uint32_t lastTime500ms = 0;
 int countCheck = 0;
 const int maxCountCheck = 2;
 const float frequencyMin = 350.0; // 350Hz
-const float frequencyMax = 1000.0; // 470Hz
+const float frequencyMax = 2000.0; // 2000Hz
 int totalTone = 0;
 
 float previousAverage = 0;
 const float maxDeviationPercentage = 20.0; // Max deviation from stable frequency in %
 int timeOutNoSignal = 0;
 // 3s
-const int maxTimeOutNoSignal = 2;
+const int maxTimeOutNoSignal = 3;
 
 void loop()
 {
@@ -117,7 +117,7 @@ void handleBuzzerState()
   if (stateMachine == STATE_NG)
   {
     tone(BUZZER_PASSIVE, 2000, 400);
-    buzzerActive.onToggle(5,150);
+    buzzerActive.on();
   }
   else if (stateMachine == STATE_OK && totalTone > 0)
   {
@@ -130,6 +130,7 @@ void handleBuzzerState()
 float readFrequency()
 {
   unsigned long highTime = pulseIn(signalPin, HIGH, 100000); // Timeout 500ms
+  // delayMicroseconds(20);
   unsigned long lowTime = pulseIn(signalPin, LOW, 100000);   // Timeout 500ms
 
   Serial.print("High: ");
